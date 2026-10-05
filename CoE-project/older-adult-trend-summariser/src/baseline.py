@@ -8,24 +8,21 @@ Non-diagnostic and non-prescriptive by design.
 import pandas as pd
 import numpy as np
 from typing import Dict, Any
+from src.config import BASELINE_WINDOW_DAYS
 
 
-def calculate_personal_baselines(df: pd.DataFrame, baseline_window_days: int = 20) -> Dict[str, Dict[str, float]]:
+def calculate_personal_baselines(df: pd.DataFrame, window_days: int = BASELINE_WINDOW_DAYS) -> Dict[str, Dict[str, float]]:
     """
     Calculates median historical baseline for each person across vital metrics.
     Prefers median over mean to minimize the impact of isolated outlier readings.
-    
-    Returns a dictionary mapping person_id -> vital_name -> baseline_median.
     """
     baselines = {}
 
     for person_id, group in df.groupby("person_id"):
-        # Sort chronologically
         group_sorted = group.sort_values("timestamp")
 
-        # Take first window of readings as the baseline period (or full period if shorter)
-        if len(group_sorted) > baseline_window_days:
-            baseline_period = group_sorted.iloc[:baseline_window_days]
+        if len(group_sorted) > window_days:
+            baseline_period = group_sorted.iloc[:window_days]
         else:
             baseline_period = group_sorted
 

@@ -4,7 +4,7 @@
 
 Older adults living alone with limited digital confidence frequently rely on remote monitoring devices to track vital signs. However, healthcare care teams managing these telemetry streams face a major operational bottleneck: **an overwhelming influx of low-value readings and alerts, which masks meaningful clinical changes.**
 
-This problem analysis explores the drivers of alert overload, the risks of current triage paradigms, and the basic architectural foundation of a personal-baseline trend summariser.
+This problem analysis explores the drivers of alert overload, the risks of current triage paradigms, and the foundational design of a baseline-driven trend summariser.
 
 ---
 
@@ -34,7 +34,7 @@ This problem analysis explores the drivers of alert overload, the risks of curre
 
 ## Proposed Solution Direction
 
-To shift from reactive raw-reading alerts to proactive, meaningful pattern recognition, the proposed pipeline follows a simple, transparent flow:
+To shift from reactive raw-reading alerts to proactive, meaningful pattern recognition, the proposed pipeline follows a transparent flow:
 
 ```
 Individual readings
@@ -45,22 +45,22 @@ Recent readings
         ↓
 Change from baseline
         ↓
-Basic trend detection
+Basic trend detection & Alert Prioritisation
         ↓
-Trend summary
+Trend summary & Escalation Outcome
 ```
 
 ### Key Principles of the Prototype Foundation:
-- **Prioritise Change Over Single Outliers**: Distinguish between isolated transient readings and sustained, persistent shifts.
+- **Prioritise Sustained Change Over Single Outliers**: Distinguish between isolated transient readings and sustained, persistent shifts.
 - **Individual-Centric Baselines**: Measure deviations against each individual's median historical pattern rather than population static thresholds.
 - **Human-Readable Summaries**: Provide clear, concise summaries describing the nature of the change without overwhelming care teams with raw data dumps.
 
 ---
 
-## Important Scope Boundaries & Non-Goals
+## Scope Boundaries & Non-Goals
 
 > [!IMPORTANT]
-> **Prototype Boundaries (35% Milestone)**
+> **Prototype Boundaries (Review 2 Stage)**
 > - **No Medical Diagnosis**: This prototype does NOT provide diagnosis or medical clinical assessments.
 > - **No Treatment Recommendations**: The system does NOT suggest medication changes or medical interventions.
 > - **No Autonomous Medical Escalation**: All output is strictly informational to assist human care team review; no automated clinical actions or triage escalations are performed by this software.

@@ -1,7 +1,11 @@
 """
-Synthetic Data Generator for Older Adult Home Vital Readings.
-Generates 10 synthetic profiles over 30 days demonstrating 5 clinical patterns.
-Strictly synthetic data: uses anonymous IDs only (adult_001 to adult_010).
+Synthetic Data Generator for Older Adult Home Vital Readings & Symptom Reports.
+Generates 10 synthetic profiles over 30 days demonstrating realistic clinical patterns:
+  - Pattern 1: Stable Normal (adult_001, adult_002)
+  - Pattern 2: High Baseline Natural Variation (adult_003, adult_004) -> Generates static low-value alerts, suppressed by Trend Summariser.
+  - Pattern 3: Isolated Abnormal Spikes (adult_005, adult_006) -> Generates static low-value alerts, suppressed by Trend Summariser.
+  - Pattern 4: Persistent Shift (adult_007, adult_008) -> True Meaningful Change, detected by both.
+  - Pattern 5: Gradual Trend (adult_009, adult_010) -> True Meaningful Change, detected by both.
 """
 
 import random
@@ -15,12 +19,6 @@ from src.config import PERSON_IDS, DAYS_OF_READINGS, RAW_DATA_PATH
 def generate_synthetic_data(seed: int = 42, include_dirty_records: bool = True) -> pd.DataFrame:
     """
     Generates synthetic home readings dataset for 10 older adults over 30 days.
-    Implements 5 key clinical patterns across profiles:
-      - Pattern 1: Stable (adult_001, adult_002)
-      - Pattern 2: Natural variation (adult_003, adult_004)
-      - Pattern 3: Isolated change (adult_005, adult_006)
-      - Pattern 4: Persistent change (adult_007, adult_008)
-      - Pattern 5: Gradual trend (adult_009, adult_010)
     """
     np.random.seed(seed)
     random.seed(seed)
@@ -28,32 +26,30 @@ def generate_synthetic_data(seed: int = 42, include_dirty_records: bool = True) 
     start_date = datetime(2026, 1, 1, 8, 0, 0)
     records = []
 
-    # Map profiles to target patterns
     profile_patterns = {
         "adult_001": "stable",
         "adult_002": "stable",
-        "adult_003": "natural_variation",
-        "adult_004": "natural_variation",
-        "adult_005": "isolated_change",
-        "adult_006": "isolated_change",
+        "adult_003": "high_baseline_variation",
+        "adult_004": "high_baseline_variation",
+        "adult_005": "isolated_spikes",
+        "adult_006": "isolated_spikes",
         "adult_007": "persistent_change",
         "adult_008": "persistent_change",
         "adult_009": "gradual_trend",
         "adult_010": "gradual_trend",
     }
 
-    # Baseline vitals per individual
     base_vitals = {
-        pid: {
-            "hr": int(np.random.normal(70, 4)),
-            "sys_bp": int(np.random.normal(122, 5)),
-            "dia_bp": int(np.random.normal(78, 4)),
-            "spo2": int(np.random.normal(97, 1)),
-            "temp": round(float(np.random.normal(36.6, 0.2)), 1),
-            # Default consent: true for most, false for adult_010 to demonstrate consent logic
-            "consent": "consent_given" if pid != "adult_010" else "consent_not_given"
-        }
-        for pid in PERSON_IDS
+        "adult_001": {"hr": 70, "sys_bp": 120, "dia_bp": 78, "spo2": 97, "temp": 36.6, "consent": "consent_given"},
+        "adult_002": {"hr": 72, "sys_bp": 122, "dia_bp": 80, "spo2": 98, "temp": 36.5, "consent": "consent_given"},
+        "adult_003": {"hr": 74, "sys_bp": 133, "dia_bp": 84, "spo2": 96, "temp": 36.7, "consent": "consent_given"},
+        "adult_004": {"hr": 75, "sys_bp": 133, "dia_bp": 85, "spo2": 97, "temp": 36.6, "consent": "consent_given"},
+        "adult_005": {"hr": 70, "sys_bp": 122, "dia_bp": 78, "spo2": 97, "temp": 36.6, "consent": "consent_given"},
+        "adult_006": {"hr": 71, "sys_bp": 124, "dia_bp": 79, "spo2": 97, "temp": 36.6, "consent": "consent_given"},
+        "adult_007": {"hr": 70, "sys_bp": 122, "dia_bp": 78, "spo2": 97, "temp": 36.6, "consent": "consent_given"},
+        "adult_008": {"hr": 72, "sys_bp": 123, "dia_bp": 80, "spo2": 96, "temp": 36.7, "consent": "consent_given"},
+        "adult_009": {"hr": 70, "sys_bp": 120, "dia_bp": 78, "spo2": 97, "temp": 36.6, "consent": "consent_given"},
+        "adult_010": {"hr": 72, "sys_bp": 122, "dia_bp": 79, "spo2": 96, "temp": 36.6, "consent": "consent_revoked"},
     }
 
     for day in range(DAYS_OF_READINGS):
@@ -70,45 +66,50 @@ def generate_synthetic_data(seed: int = 42, include_dirty_records: bool = True) 
             spo2 = base["spo2"]
             temp = base["temp"]
             consent = base["consent"]
-
-            # Symptom report (basic placeholder for 35% stage, e.g. None or simple string)
             symptom = "None"
+            ground_truth_event = "normal"
 
-            # Apply pattern logic
             if pattern == "stable":
                 hr += int(np.random.choice([-1, 0, 1]))
                 sys_bp += int(np.random.choice([-1, 0, 1]))
                 dia_bp += int(np.random.choice([-1, 0, 1]))
 
-            elif pattern == "natural_variation":
-                hr += int(np.random.choice([-3, -2, -1, 0, 1, 2, 3]))
-                sys_bp += int(np.random.choice([-4, -2, 0, 2, 4]))
-                dia_bp += int(np.random.choice([-3, -1, 0, 1, 3]))
+            elif pattern == "high_baseline_variation":
+                # High baseline (133 mmHg). Fluctuation (+2 to +4) causes static alert on ~8 days, but it is benign normal variation for this individual.
+                fluct = int(np.random.choice([-1, 0, 2, 3, 4]))
+                sys_bp += fluct
+                if sys_bp > 135:
+                    ground_truth_event = "benign_variation"
 
-            elif pattern == "isolated_change":
-                # Day 25 has an isolated spike/dip
-                if day == 24:
-                    sys_bp += 22
-                    hr += 12
-                    symptom = "Feeling slightly dizzy"
+            elif pattern == "isolated_spikes":
+                # Isolated abnormal spikes on days 8, 16, 24
+                if day in [7, 15, 23]:
+                    sys_bp += 18
+                    hr += 10
+                    symptom = "Feeling slightly dizzy after exertion"
+                    ground_truth_event = "isolated_spike"
                 else:
                     hr += int(np.random.choice([-1, 0, 1]))
                     sys_bp += int(np.random.choice([-2, 0, 2]))
 
             elif pattern == "persistent_change":
-                # Days 24 to 29 show persistent elevation
-                if day >= 24:
+                # Persistent elevated BP on days 22-29 (8 days)
+                if day >= 21:
                     sys_bp += 18
                     hr += 10
-                    symptom = "Feeling tired"
+                    symptom = "Feeling persistently fatigued and lightheaded"
+                    ground_truth_event = "meaningful_change"
                 else:
                     sys_bp += int(np.random.choice([-1, 0, 1]))
 
             elif pattern == "gradual_trend":
-                # Days 15 to 29 demonstrate gradual upward movement
+                # Gradual trend upward over days 14-29
                 if day >= 14:
-                    sys_bp += (day - 14) * 1.5
-                    hr += (day - 14) * 0.6
+                    sys_bp += int((day - 14) * 1.4)
+                    hr += int((day - 14) * 0.5)
+                    if day >= 21:
+                        symptom = "Shortness of breath during routine daily activities"
+                        ground_truth_event = "meaningful_change"
 
             # Bound vitals within sensible limits for raw generation
             hr = max(40, min(180, int(hr)))
@@ -126,26 +127,26 @@ def generate_synthetic_data(seed: int = 42, include_dirty_records: bool = True) 
                 "oxygen_saturation": spo2,
                 "temperature": temp,
                 "symptom_report": symptom,
-                "consent_status": consent
+                "consent_status": consent,
+                "ground_truth_event": ground_truth_event
             })
 
     df = pd.DataFrame(records)
 
     if include_dirty_records:
-        # Add a couple of synthetic duplicate rows and missing values for cleaning demonstration
+        # Insert intentional duplicate rows, missing value, and out of range value for data cleaning tests
         dup_row_1 = df.iloc[5].copy()
         dup_row_2 = df.iloc[20].copy()
         df = pd.concat([df, pd.DataFrame([dup_row_1, dup_row_2])], ignore_index=True)
 
-        # Introduce a missing value and an invalid range value
         df.loc[12, "heart_rate"] = np.nan
-        df.loc[45, "systolic_bp"] = 350  # Invalid range
+        df.loc[45, "systolic_bp"] = 350  # Out of range
 
     return df
 
 
 def save_raw_dataset():
-    """Generates synthetic dataset and saves it to data/raw/synthetic_home_readings.csv."""
+    """Generates synthetic dataset and saves to data/raw/synthetic_home_readings.csv."""
     RAW_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
     df = generate_synthetic_data(include_dirty_records=True)
     df.to_csv(RAW_DATA_PATH, index=False)

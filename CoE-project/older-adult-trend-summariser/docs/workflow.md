@@ -5,15 +5,15 @@
 ### 1. Older Adult
 - **Profile**: Older adult living alone with limited digital confidence.
 - **Responsibilities**:
-  - Provide regular home vital readings (e.g., heart rate, blood pressure, oxygen saturation, temperature).
-  - Optionally provide qualitative symptom reports (*Future Work / Remaining 65%*).
-  - Explicitly manage (provide or withdraw) consent for data sharing with care teams.
+  - Provide regular home vital readings (heart rate, blood pressure, oxygen saturation, temperature).
+  - Provide qualitative symptom reports (e.g. feeling dizzy, fatigued, shortness of breath).
+  - Explicitly manage (provide or revoke) consent for data sharing with care teams.
 
 ### 2. Care Team
 - **Profile**: Clinicians, nurses, and care coordinators monitoring multiple older adults.
 - **Responsibilities**:
   - Review authorised trend information for older adults who have granted consent.
-  - Evaluate potentially meaningful directional changes highlighted by trend summaries.
+  - Prioritise high/medium priority alerts and evaluate escalation outcomes (`routine_monitoring`, `care_team_review`, `urgent_check_in`).
   - Avoid wasting clinical time on isolated, benign fluctuations.
 
 ### 3. Administrator
@@ -35,32 +35,27 @@ Takes reading
      ↓
 Reading stored
      ↓
-Individual abnormal reading may trigger attention
+Individual abnormal reading triggers static alert
      ↓
 Care team receives many readings/alerts
      ↓
 Manual review
      ↓
-Meaningful changes may be difficult to identify
+Meaningful changes difficult to identify
 ```
 
-### Proposed Process (35% Milestone Stage)
+### Proposed Process (Review 2 Stage)
 
 ```
 Older Adult
      ↓
-Synthetic home reading
+Synthetic home reading & Symptom Report
      ↓
-Personal baseline
+Personal baseline calculation
      ↓
-Basic trend detection
+Trend detection & Alert Prioritisation
      ↓
-Basic trend summary
+Trend summary & Escalation Outcome
      ↓
 Authorised care-team view
 ```
-
-> [!NOTE]
-> **Future Extensions (Remaining 65%)**:
-> - Integrated qualitative symptom reports alongside quantitative vital trends.
-> - Multi-tier escalation workflows and alert-reduction performance experiments.

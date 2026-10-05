@@ -15,13 +15,6 @@ from src.config import RAW_DATA_PATH, PROCESSED_DATA_PATH, VITAL_RANGES
 def clean_dataset(raw_df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, int]]:
     """
     Cleans raw home readings dataframe and returns cleaned dataframe alongside cleaning statistics.
-    
-    Cleaning steps:
-    1. Timestamp parsing & ISO conversion
-    2. Datatype casting
-    3. Exact duplicate identification and removal
-    4. Numeric range validation against physiological limits
-    5. Missing value logging (rows with missing required vitals are dropped rather than fabricated)
     """
     stats = {
         "rows_before": len(raw_df),
@@ -42,13 +35,11 @@ def clean_dataset(raw_df: pd.DataFrame) -> Tuple[pd.DataFrame, Dict[str, int]]:
     df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
 
     # 3. Missing value analysis
-    # Count missing values across key vital sign columns
     vital_cols = list(VITAL_RANGES.keys())
     missing_mask = df[vital_cols].isna().any(axis=1) | df["timestamp"].isna()
     stats["missing_values_found"] = int(missing_mask.sum())
 
-    # We do NOT silently fabricate clinical values (e.g. median imputation for clinical data can mask baseline shifts).
-    # Missing vitals rows are removed from processing and documented.
+    # We do NOT silently fabricate clinical values. Missing vitals rows are dropped and logged.
     df = df[~missing_mask].copy()
 
     # 4. Range validation
